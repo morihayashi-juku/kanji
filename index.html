@@ -293,10 +293,12 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
         h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len}mm">${ans ? '<span>' + esc(p.r) + '</span>' : ''}</span></span>${esc(p.o)}`;
       } else {
         const nk = [...p.q].length, no = [...p.o].length;
-        const L = Math.max(nk * EM_K + no * EM_O, [...(p.r + p.o)].length * 0.8 + 0.6);
+        const L = nk * EM_K + no * EM_O;                       // わくの長さは字数（漢字・送りがな）で決める
+        const nkana = [...(p.r + p.o)].length;
+        const kfs = Math.min(0.52, (L - 0.2) / nkana / 1.05); // ふりがなが入りきらないときは小さくする
         const kana = [...(p.r + p.o)].map(c => `<span>${esc(c)}</span>`).join('');
         const a = ans ? `<span class="wans">${[...p.q].map(c => `<span>${esc(c)}</span>`).join('')}${[...p.o].map(c => `<span class="ok">${esc(c)}</span>`).join('')}</span>` : '';
-        h += `<span class="wq${no ? ' okuri' : ''}" style="inline-size:${L.toFixed(2)}em">${a}<span class="wk">${kana}</span></span>`;
+        h += `<span class="wq${no ? ' okuri' : ''}" style="inline-size:${L.toFixed(2)}em">${a}<span class="wk" style="font-size:${kfs.toFixed(3)}em">${kana}</span></span>`;
       }
     }
   });
