@@ -66,8 +66,8 @@ button:active{transform:translateY(1px)}
 .num{font-size:4.4mm;margin-inline-end:.35em;font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
 .sp{display:inline-block;inline-size:.45em}
 .yq{display:inline-block;position:relative;border-right:.45mm solid #000;line-height:1.15;padding-block:0 .3mm}
-.ybox{position:absolute;left:100%;top:0;margin-left:.36em;width:1.45em;border:.35mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:1em;line-height:1;padding-top:.15em;color:var(--red);text-align:start;display:flex;justify-content:center}
-.ybox span{font-size:.68em}
+.ybox{position:absolute;left:100%;top:0;margin-left:1.8mm;width:11.5mm;border:.4mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:6.6mm;line-height:1;padding-top:1.6mm;color:var(--red);text-align:start;display:flex;justify-content:center}
+.ybox span{font-size:1em}
 .wq{display:inline-block;position:relative;block-size:2em;border:.4mm solid #000;vertical-align:middle;margin-inline:.1em;line-height:1}
 .wq.okuri{border-width:1.1mm}
 .wk{position:absolute;left:100%;top:0;height:100%;margin-left:.12em;font-size:.52em;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
@@ -170,13 +170,13 @@ function showInfo() {
 // 新しい範囲：えらんだ単元から前へ、じゅうぶんな量になるまでさかのぼる
 function ranges(g, ui) {
   const units = DATA[g - 1].units;
-  // 書き7問＋読み10問を新しい範囲から出せるだけの量（新出漢字12字以上、読みかえ等をふくめて18以上）
+  // 書き10問＋読み10問を新しい範囲から出せるだけの量（新出漢字16字以上、読みかえ等をふくめて24以上）
   const newUnits = []; let cnt = 0, all = 0;
   for (let i = ui; i >= 0; i--) {
     newUnits.unshift(i);
     cnt += units[i].items.filter(it => it.type === 'K').length;
     all += units[i].items.length;
-    if (cnt >= 12 && all >= 18) break;
+    if (cnt >= 16 && all >= 24) break;
   }
   const oldUnits = [];
   for (let i = 0; i < newUnits[0]; i++) oldUnits.push([g, i]);
@@ -198,6 +198,7 @@ function collect(list, learned) {
   return out;
 }
 
+const NR = 14, NW = 14; // 読み・書きの問題数
 function makeSet(g, ui) {
   const here = [g, ui];
   const learned = c => LEARN[c] && before(LEARN[c], here);
@@ -209,14 +210,14 @@ function makeSet(g, ui) {
   const nK = all.filter(x => x.it.type === 'K').length, nYT = all.length - nK;
 
   // 書きに使う漢字の数（漢字が少ない最初の単元では、読みと書きで分け合う）
-  let wDistinct = (nK + nYT >= 24) ? Math.min(10, nK - Math.max(0, 14 - nYT)) : Math.round(nK * 10 / 24);
-  wDistinct = Math.max(1, Math.min(10, nK, wDistinct));
+  let wDistinct = (nK + nYT >= NR + NW) ? Math.min(NW, nK - Math.max(0, NR - nYT)) : Math.round(nK * NW / (NR + NW));
+  wDistinct = Math.max(1, Math.min(NW, nK, wDistinct));
 
   // ---- 書き（新出漢字だけ）
   const W = pickMix(shuffle(newAll.filter(x => x.it.type === 'K')), shuffle(oldAll.filter(x => x.it.type === 'K')), wDistinct, Math.round(wDistinct * 0.7));
   const writeK = new Set(W.map(x => x.it.word));
   const prefer = x => ex => kanjiOf(ex.find(p => p.q).q).every(c => c === x.it.word || !writeK.has(c));
-  const writing = assign(fill(W, 10), prefer);
+  const writing = assign(fill(W, NW), prefer);
   const usedW = new Set();
   writing.forEach(w => kanjiOf(w.ex.find(p => p.q).q).forEach(c => usedW.add(c)));
 
@@ -227,7 +228,7 @@ function makeSet(g, ui) {
   };
   const rNew = shuffle(newAll.map(goodR).filter(Boolean));
   const rOld = shuffle(oldAll.map(goodR).filter(Boolean));
-  const R = pickMix(rNew, rOld, 14, 10);
+  const R = pickMix(rNew, rOld, NR, Math.round(NR * 0.7));
   const reading = assign(fill(R, 14), () => () => true);
   return { reading: spread(reading), writing: spread(writing), hidden: usedW, learned };
 }
@@ -287,8 +288,9 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
       h += esc(show ? p.w : p.r);
     } else if (p.q !== undefined) {
       if (mode === 'R') {
-        const len = Math.max([...p.q].length, [...p.r].length * 0.72 + 0.9);
-        h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len.toFixed(2)}em">${ans ? '<span>' + esc(p.r) + '</span>' : ''}</span></span>${esc(p.o)}`;
+        // 読みがなのらん：ひらがな1字につき7mm＋よゆう。漢字の長さより短くはしない
+        const len = Math.max([...p.q].length * 6, [...p.r].length * 7 + 4);
+        h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len}mm">${ans ? '<span>' + esc(p.r) + '</span>' : ''}</span></span>${esc(p.o)}`;
       } else {
         const nk = [...p.q].length, no = [...p.o].length;
         const L = Math.max(nk * EM_K + no * EM_O, [...(p.r + p.o)].length * 0.66 + 0.4);
@@ -303,8 +305,8 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
 
 function pageHTML(set, mode, ans, meta) {
   const qs = mode === 'R' ? set.reading : set.writing;
-  const per = mode === 'R' ? 7 : 5;                 // 1段の問題数
-  const style = `--n:${per};--fs:${mode === 'R' ? '7mm' : '7.4mm'};--gutter:${mode === 'R' ? '2.35em' : '.9em'}`;
+  const per = 7;                                    // 1段の問題数（読み・書きとも）
+  const style = `--n:${per};--fs:${mode === 'R' ? '5.6mm' : '7mm'};--gutter:${mode === 'R' ? '14mm' : '.95em'}`;
   const col = (q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`;
   const tiers = [qs.slice(0, per), qs.slice(per)].map((part, t) =>
     `<div class="tier"><div class="qs" style="${style}">${part.map((q, i) => col(q, t * per + i)).join('')}</div></div>`).join('');
