@@ -179,14 +179,16 @@ function ranges(g, ui) {
     all += units[i].items.length;
     if (cnt >= 16 && all >= 24) break;
   }
-  const oldUnits = [];
-  for (let i = 0; i < newUnits[0]; i++) oldUnits.push([g, i]);
-  let oldK = oldUnits.reduce((s, [gg, i]) => s + DATA[gg - 1].units[i].items.filter(it => it.type === 'K').length, 0);
-  let usePrev = false;
-  if (oldK < 10 && g > 1) { usePrev = true; DATA[g - 2].units.forEach((u, i) => oldUnits.push([g - 1, i])); }
-  let oldLabel = oldUnits.length === 0 ? 'なし（新しい範囲だけで作ります）'
-    : (newUnits[0] > 0 ? `小${g}の${CIRC[0]}〜${CIRC[newUnits[0] - 1]}` : '') + (usePrev ? `${newUnits[0] > 0 ? '＋' : ''}小${g - 1}の漢字` : '');
-  return { newUnits, oldUnits, oldLabel };
+  // 復習：同じ学年の、新しい範囲より前の単元＋前の学年すべて（前の学年は3割のうち約半分）
+  const sameUnits = [], prevUnits = [];
+  for (let i = 0; i < newUnits[0]; i++) sameUnits.push([g, i]);
+  for (let gg = 1; gg < g; gg++) DATA[gg - 1].units.forEach((u, i) => prevUnits.push([gg, i]));
+  const oldUnits = sameUnits.concat(prevUnits);
+  const parts = [];
+  if (sameUnits.length) parts.push(`小${g}の${CIRC[0]}〜${CIRC[newUnits[0] - 1]}`);
+  if (prevUnits.length) parts.push(`${[...Array(g - 1)].map((_, i) => '小' + (i + 1)).join('・')}の漢字`);
+  const oldLabel = parts.length ? parts.join('＋') : 'なし（新しい範囲だけで作ります）';
+  return { newUnits, sameUnits, prevUnits, oldUnits, oldLabel };
 }
 
 function collect(list, learned) {
@@ -203,10 +205,12 @@ const NR = 14, NW = 14; // 読み・書きの問題数
 function makeSet(g, ui) {
   const here = [g, ui];
   const learned = c => LEARN[c] && before(LEARN[c], here);
-  const { newUnits, oldUnits } = ranges(g, ui);
+  const { newUnits, sameUnits, prevUnits } = ranges(g, ui);
   const gather = pairs => pairs.flatMap(([gg, i]) => DATA[gg - 1].units[i].items.map(it => ({ it, g: gg, ui: i })));
   const newAll = collect(gather(newUnits.map(i => [g, i])), learned);
-  const oldAll = collect(gather(oldUnits), learned);
+  const sameAll = collect(gather(sameUnits), learned);
+  const prevAll = collect(gather(prevUnits), learned);
+  const oldAll = sameAll.concat(prevAll);
   const all = newAll.concat(oldAll);
   const nK = all.filter(x => x.it.type === 'K').length, nYT = all.length - nK;
 
@@ -215,7 +219,8 @@ function makeSet(g, ui) {
   wDistinct = Math.max(1, Math.min(NW, nK, wDistinct));
 
   // ---- 書き（新出漢字だけ）
-  const W = pickMix(shuffle(newAll.filter(x => x.it.type === 'K')), shuffle(oldAll.filter(x => x.it.type === 'K')), wDistinct, Math.round(wDistinct * 0.7));
+  const onlyK = a => shuffle(a.filter(x => x.it.type === 'K'));
+  const W = pickMix(onlyK(newAll), onlyK(sameAll), onlyK(prevAll), wDistinct, Math.round(wDistinct * 0.7));
   const writeK = new Set(W.map(x => x.it.word));
   const prefer = x => ex => kanjiOf(ex.find(p => p.q).q).every(c => c === x.it.word || !writeK.has(c));
   const writing = assign(fill(W, NW), prefer);
@@ -227,18 +232,20 @@ function makeSet(g, ui) {
     const exs = x.exs.filter(ex => kanjiOf(ex.find(p => p.q).q).every(c => !usedW.has(c)));
     return exs.length ? { ...x, exs } : null;
   };
-  const rNew = shuffle(newAll.map(goodR).filter(Boolean));
-  const rOld = shuffle(oldAll.map(goodR).filter(Boolean));
-  const R = pickMix(rNew, rOld, NR, Math.round(NR * 0.7));
+  const ok = a => shuffle(a.map(goodR).filter(Boolean));
+  const R = pickMix(ok(newAll), ok(sameAll), ok(prevAll), NR, Math.round(NR * 0.7));
   const reading = assign(fill(R, 14), () => () => true);
   return { reading: spread(reading), writing: spread(writing), hidden: usedW, learned };
 }
 
-// 新しい範囲から wantNew 個、復習から残り。足りないときはもう片方からおぎなう（同じ項目は1回だけ）
-function pickMix(nw, od, total, wantNew) {
-  let a = nw.slice(0, wantNew), b = od.slice(0, total - a.length);
-  if (a.length + b.length < total) a = nw.slice(0, total - b.length);
-  return a.concat(b);
+function pickMix(nw, same, prev, total, wantNew) {
+  // 新しい範囲 約7割／復習 約3割（復習のうち約半分は前の学年から）。足りない分はほかからおぎなう
+  const wantPrev = prev.length ? Math.ceil((total - wantNew) * 0.4) : 0;
+  let a = nw.slice(0, wantNew), c = prev.slice(0, wantPrev);
+  let b = same.slice(0, total - a.length - c.length);
+  if (a.length + b.length + c.length < total) c = prev.slice(0, total - a.length - b.length);
+  if (a.length + b.length + c.length < total) a = nw.slice(0, total - b.length - c.length);
+  return a.concat(b, c);
 }
 // 問題数に足りないときは、同じ漢字の「別の例文」でおぎなう
 function fill(list, total) {
