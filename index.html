@@ -70,7 +70,8 @@ button:active{transform:translateY(1px)}
 .ybox span{font-size:1em}
 .wq{display:inline-block;position:relative;block-size:2.2em;border:.4mm solid #000;vertical-align:middle;margin-inline:.1em;line-height:1}
 .wq.okuri{border-width:1.1mm}
-.wk{position:absolute;left:100%;top:0;height:100%;margin-left:.12em;font-size:.52em;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
+.wq.okuri .wk{margin-left:2.2mm}
+.wk{position:absolute;left:100%;top:0;height:100%;margin-left:2mm;font-size:.52em;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
 .wans{position:absolute;inset:0;display:flex;justify-content:space-evenly;align-items:center;color:var(--red);font-size:1.3em;line-height:1}
 .wans .ok{font-size:.75em}
 .foot{position:absolute;right:10mm;bottom:3mm;font-size:2.8mm;color:#888;font-family:sans-serif}
@@ -308,7 +309,7 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
 function pageHTML(set, mode, ans, meta) {
   const qs = mode === 'R' ? set.reading : set.writing;
   const per = 7;                                    // 1段の問題数（読み・書きとも）
-  const style = `--n:${per};--fs:${mode === 'R' ? '5.6mm' : '7mm'};--gutter:${mode === 'R' ? '15mm' : '.95em'}`;
+  const style = `--n:${per};--fs:${mode === 'R' ? '5.6mm' : '7mm'};--gutter:${mode === 'R' ? '15mm' : '1.15em'}`;
   const col = (q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`;
   const tiers = [qs.slice(0, per), qs.slice(per)].map((part, t) =>
     `<div class="tier"><div class="qs" style="${style}">${part.map((q, i) => col(q, t * per + i)).join('')}</div></div>`).join('');
