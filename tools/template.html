@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>漢字プリントメーカー（小1〜小3・東京書籍）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1d1d1f; --sub:#6b6b70; --line:#d8d6cf; --bg:#f4f2ec; --card:#fff;
+  --accent:#2f6b4f; --accent2:#e9f1ec; --red:#d0021b;
+  --kyokasho:"UD デジタル 教科書体 N-R","UD Digi Kyokasho N-R","UD デジタル 教科書体 NK-R","YuKyokasho","游教科書体","Klee One","Hiragino Mincho ProN",serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;-webkit-text-size-adjust:100%}
+
+/* ===== 操作パネル ===== */
+.panel{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.panel-inner{max-width:1100px;margin:0 auto;padding:14px 18px;display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end}
+.brand{width:100%;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-family:var(--kyokasho);font-size:22px;margin:0;font-weight:600;letter-spacing:.04em}
+.brand small{color:var(--sub);font-size:13px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;color:var(--sub);font-weight:600}
+select{font:inherit;font-size:16px;padding:9px 34px 9px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#888 50%),linear-gradient(135deg,#888 50%,transparent 50%);background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;background-size:5px 5px;background-repeat:no-repeat}
+#unitSel{min-width:min(460px,86vw)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;font-size:15px;font-weight:600;border-radius:10px;padding:10px 16px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;touch-action:manipulation}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:active{transform:translateY(1px)}
+.unitinfo{width:100%;font-size:13px;color:var(--sub);line-height:1.7}
+.unitinfo b{color:var(--ink);font-family:var(--kyokasho);font-size:15px;letter-spacing:.05em}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tabs button{padding:7px 12px;font-size:13px}
+.tabs button[aria-pressed="true"]{background:var(--accent2);border-color:var(--accent);color:var(--accent)}
+
+/* ===== プレビュー ===== */
+#preview{padding:18px 0 60px}
+.pagewrap{margin:0 auto 18px;width:calc(297mm * var(--z));height:calc(210mm * var(--z));}
+.pagewrap .page{zoom:var(--z);box-shadow:0 4px 18px rgba(0,0,0,.12)}
+.pagelabel{max-width:calc(297mm * var(--z));margin:0 auto 6px;font-size:12px;color:var(--sub)}
+.empty{max-width:640px;margin:40px auto;text-align:center;color:var(--sub);line-height:1.9}
+
+/* ===== プリント本体（A4横） ===== */
+.page{width:297mm;height:210mm;background:#fff;padding:9mm 11mm 9mm;display:flex;flex-direction:column;overflow:hidden;font-family:var(--kyokasho);color:#000;position:relative}
+.ph{display:flex;align-items:flex-end;gap:6mm;border-bottom:.5mm solid #000;padding-bottom:2.2mm;height:17mm;flex:none}
+.ph .ttl{font-size:7.2mm;font-weight:600;letter-spacing:.08em;white-space:nowrap}
+.ph .rng{font-size:3.6mm;line-height:1.35;flex:1;min-width:0}
+.ph .rng span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph .nm{display:flex;align-items:flex-end;gap:2mm;font-size:4mm;white-space:nowrap}
+.ph .nm i{display:inline-block;width:46mm;border-bottom:.3mm solid #000;height:7mm}
+.ph .sc{font-size:4mm;border:.4mm solid #000;border-radius:2mm;padding:1.2mm 2.5mm;white-space:nowrap}
+.ph .sc i{display:inline-block;width:11mm}
+.ph .ansmark{color:var(--red);border:.5mm solid var(--red);border-radius:2mm;padding:.5mm 2mm;font-size:4.4mm;font-weight:600}
+.howto{font-size:4.2mm;margin:2.4mm 0 0;flex:none}
+.qs{flex:1;writing-mode:vertical-rl;margin-top:3mm;font-size:var(--fs);line-height:1;overflow:hidden}
+.q{block-size:calc(275mm / var(--n));inline-size:100%;padding-block-start:var(--gutter);padding-inline-start:1mm;border-left:.25mm dashed #b9b9b9;white-space:nowrap;line-height:1.25}
+.q:last-child{border-left:none}
+.num{font-size:4.6mm;margin-inline-end:2mm;font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
+.sp{display:inline-block;inline-size:.45em}
+.yq{display:inline-block;position:relative;border-right:.45mm solid #000;line-height:1.15;padding-block:0 .3mm}
+.ybox{position:absolute;left:100%;top:0;margin-left:2.4mm;width:9mm;border:.35mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:4.4mm;line-height:1;padding-top:1mm;color:var(--red);text-align:start;display:flex;justify-content:center}
+.wq{display:inline-block;position:relative;block-size:13.5mm;border:.45mm solid #000;vertical-align:middle;margin-block:0 0;margin-inline:.6mm;line-height:1}
+.wk{position:absolute;left:100%;top:0;height:100%;margin-left:.8mm;font-size:3.7mm;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
+.wans{position:absolute;inset:0;display:flex;justify-content:space-evenly;align-items:center;color:var(--red);font-size:9mm;line-height:1}
+.wans .ok{font-size:6.6mm}
+.foot{position:absolute;right:11mm;bottom:3.5mm;font-size:2.8mm;color:#888;font-family:sans-serif}
+
+/* ===== データを見る ===== */
+#dataview{max-width:1100px;margin:0 auto;padding:18px}
+#dataview h2{font-family:var(--kyokasho);font-size:22px;margin:22px 0 8px}
+.dunit{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:10px 0}
+.dunit h3{margin:0 0 6px;font-size:15px}
+.dunit h3 small{color:var(--sub);font-weight:400}
+.ditem{display:grid;grid-template-columns:88px 1fr;gap:4px 12px;padding:6px 0;border-top:1px dashed #e4e2dc;font-size:14px}
+.ditem:first-of-type{border-top:none}
+.ditem .k{font-family:var(--kyokasho);font-size:26px;line-height:1.1}
+.ditem .k small{display:block;font-size:11px;color:var(--sub);font-family:sans-serif}
+.ditem .tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:#eee;margin-right:6px}
+.ditem .tag.Y{background:#e7f0fb}.ditem .tag.T{background:#fbefe2}
+.ditem ul{margin:2px 0 0;padding-left:1.2em;font-family:var(--kyokasho);font-size:16px;line-height:1.7}
+.ditem u{text-decoration-thickness:2px;text-underline-offset:3px}
+.ditem rt{font-size:10px}
+
+@media screen and (max-width:700px){ .tabs{margin-left:0} }
+
+/* ===== 印刷 ===== */
+@page{size:A4 landscape;margin:0}
+@media print{
+  body{background:#fff}
+  .panel,.pagelabel,#dataview,.empty{display:none!important}
+  #preview{padding:0}
+  .pagewrap{width:auto;height:auto;margin:0}
+  .pagewrap .page{zoom:1;box-shadow:none}
+  .page{break-after:page;page-break-after:always}
+  .noprint{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="panel">
+  <div class="panel-inner">
+    <div class="brand"><h1>漢字プリントメーカー</h1><small>東京書籍「新しい国語」小1〜小3｜A4横・縦書き</small>
+      <div class="tabs"><button id="tabPrint" aria-pressed="true">プリント</button><button id="tabData" aria-pressed="false">漢字データを見る</button></div>
+    </div>
+    <div class="field"><label for="gradeSel">学年</label>
+      <select id="gradeSel"><option value="1">小学1年</option><option value="2" selected>小学2年</option><option value="3">小学3年</option></select></div>
+    <div class="field"><label for="unitSel">ここまで習った（単元）</label><select id="unitSel"></select></div>
+    <div class="field"><label for="setSel">まい数（パターン）</label>
+      <select id="setSel"></select></div>
+    <div class="btns">
+      <button class="primary" id="makeBtn">プリントを作る</button>
+      <button id="printQ">問題を印刷</button>
+      <button id="printA">答えを印刷</button>
+      <button id="printAll">ぜんぶ印刷</button>
+    </div>
+    <div class="unitinfo" id="unitInfo"></div>
+  </div>
+</div>
+<main id="preview"><div class="empty">学年と「ここまで習った」単元を選んで、<br>「プリントを作る」をおしてください。<br>おすたびに、ちがう問題のプリントができます。</div></main>
+<section id="dataview" hidden></section>
+
+<script>
+const DATA = __DATA__;
+
+/* ---------- 共通 ---------- */
+const CIRC = '①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳㉑㉒㉓㉔㉕㉖㉗㉘㉙㉚㉛㉜㉝㉞㉟㊱㊲㊳㊴㊵';
+const isKanji = c => /[一-鿿々]/.test(c);
+const kanjiOf = s => [...s].filter(isKanji);
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e) { return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e) {} } };
+
+// 漢字 → 習う位置（学年・単元）
+const LEARN = {};
+DATA.forEach(g => g.units.forEach((u, ui) => u.items.forEach(it => { if (it.type === 'K') LEARN[it.word] = [g.grade, ui]; })));
+const before = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] <= b[1]);
+
+/* ---------- 画面 ---------- */
+const $ = id => document.getElementById(id);
+for (let i = 1; i <= 10; i++) $('setSel').insertAdjacentHTML('beforeend', `<option value="${i}">${i}まい</option>`);
+
+function fillUnits() {
+  const g = +$('gradeSel').value;
+  const units = DATA[g - 1].units;
+  $('unitSel').innerHTML = units.map((u, i) => {
+    const ks = u.items.filter(it => it.type === 'K').map(it => it.word).join('');
+    return `<option value="${i}">${CIRC[i] || (i + 1)} ${esc(u.title)}${ks ? '（' + ks + '）' : ''}</option>`;
+  }).join('');
+}
+function showInfo() {
+  const g = +$('gradeSel').value, ui = +$('unitSel').value;
+  const r = ranges(g, ui);
+  const nk = r.newUnits.flatMap(i => DATA[g - 1].units[i].items.filter(it => it.type === 'K').map(it => it.word)).join('');
+  const nu = r.newUnits.map(i => CIRC[i]).join('');
+  $('unitInfo').innerHTML = `新しい範囲（約7割）：<b>${nu}</b> ${nk ? '<b>' + nk + '</b>' : ''}　｜　復習（約3割）：${r.oldLabel}`;
+}
+
+/* ---------- 出題のしくみ ---------- */
+// 新しい範囲：えらんだ単元から前へ、じゅうぶんな量になるまでさかのぼる
+function ranges(g, ui) {
+  const units = DATA[g - 1].units;
+  // 書き7問＋読み10問を新しい範囲から出せるだけの量（新出漢字12字以上、読みかえ等をふくめて18以上）
+  const newUnits = []; let cnt = 0, all = 0;
+  for (let i = ui; i >= 0; i--) {
+    newUnits.unshift(i);
+    cnt += units[i].items.filter(it => it.type === 'K').length;
+    all += units[i].items.length;
+    if (cnt >= 12 && all >= 18) break;
+  }
+  const oldUnits = [];
+  for (let i = 0; i < newUnits[0]; i++) oldUnits.push([g, i]);
+  let oldK = oldUnits.reduce((s, [gg, i]) => s + DATA[gg - 1].units[i].items.filter(it => it.type === 'K').length, 0);
+  let usePrev = false;
+  if (oldK < 10 && g > 1) { usePrev = true; DATA[g - 2].units.forEach((u, i) => oldUnits.push([g - 1, i])); }
+  let oldLabel = oldUnits.length === 0 ? 'なし（新しい範囲だけで作ります）'
+    : (newUnits[0] > 0 ? `小${g}の${CIRC[0]}〜${CIRC[newUnits[0] - 1]}` : '') + (usePrev ? `${newUnits[0] > 0 ? '＋' : ''}小${g - 1}の漢字` : '');
+  return { newUnits, oldUnits, oldLabel };
+}
+
+function collect(list, learned) {
+  // 使える例文だけをもった項目にする
+  const out = [];
+  list.forEach(({ it, g, ui }) => {
+    const exs = it.ex.filter(ex => { const q = ex.find(p => p.q); return kanjiOf(q.q).every(c => learned(c)); });
+    if (exs.length) out.push({ it, g, ui, exs });
+  });
+  return out;
+}
+
+function makeSet(g, ui) {
+  const here = [g, ui];
+  const learned = c => LEARN[c] && before(LEARN[c], here);
+  const { newUnits, oldUnits } = ranges(g, ui);
+  const gather = pairs => pairs.flatMap(([gg, i]) => DATA[gg - 1].units[i].items.map(it => ({ it, g: gg, ui: i })));
+  const newAll = collect(gather(newUnits.map(i => [g, i])), learned);
+  const oldAll = collect(gather(oldUnits), learned);
+  const all = newAll.concat(oldAll);
+  const nK = all.filter(x => x.it.type === 'K').length, nYT = all.length - nK;
+
+  // 書きに使う漢字の数（漢字が少ない最初の単元では、読みと書きで分け合う）
+  let wDistinct = (nK + nYT >= 24) ? Math.min(10, nK - Math.max(0, 14 - nYT)) : Math.round(nK * 10 / 24);
+  wDistinct = Math.max(1, Math.min(10, nK, wDistinct));
+
+  // ---- 書き（新出漢字だけ）
+  const W = pickMix(shuffle(newAll.filter(x => x.it.type === 'K')), shuffle(oldAll.filter(x => x.it.type === 'K')), wDistinct, Math.round(wDistinct * 0.7));
+  const writeK = new Set(W.map(x => x.it.word));
+  const prefer = x => ex => kanjiOf(ex.find(p => p.q).q).every(c => c === x.it.word || !writeK.has(c));
+  const writing = assign(fill(W, 10), prefer);
+  const usedW = new Set();
+  writing.forEach(w => kanjiOf(w.ex.find(p => p.q).q).forEach(c => usedW.add(c)));
+
+  // ---- 読み（新出漢字＋読みかえ＋特別な読み）。書きに出た漢字は使わない
+  const goodR = x => {
+    const exs = x.exs.filter(ex => kanjiOf(ex.find(p => p.q).q).every(c => !usedW.has(c)));
+    return exs.length ? { ...x, exs } : null;
+  };
+  const rNew = shuffle(newAll.map(goodR).filter(Boolean));
+  const rOld = shuffle(oldAll.map(goodR).filter(Boolean));
+  const R = pickMix(rNew, rOld, 14, 10);
+  const reading = assign(fill(R, 14), () => () => true);
+  return { reading: spread(reading), writing: spread(writing), hidden: usedW, learned };
+}
+
+// 新しい範囲から wantNew 個、復習から残り。足りないときはもう片方からおぎなう（同じ項目は1回だけ）
+function pickMix(nw, od, total, wantNew) {
+  let a = nw.slice(0, wantNew), b = od.slice(0, total - a.length);
+  if (a.length + b.length < total) a = nw.slice(0, total - b.length);
+  return a.concat(b);
+}
+// 問題数に足りないときは、同じ漢字の「別の例文」でおぎなう
+function fill(list, total) {
+  const res = list.slice();
+  if (!list.length) return res;
+  let k = 0;
+  while (res.length < total && k < list.length * 6) {
+    const p = list[k % list.length];
+    if (res.filter(r => r.it === p.it).length < p.exs.length) res.push(p);
+    k++;
+  }
+  return res;
+}
+// 項目ごとに例文をわりあてる（同じ例文は使わない）
+function assign(list, preferFn) {
+  const queues = new Map();
+  return list.map(x => {
+    if (!queues.has(x.it)) {
+      const f = preferFn(x);
+      const sh = shuffle(x.exs);
+      queues.set(x.it, sh.filter(f).concat(sh.filter(e => !f(e))));
+    }
+    const ex = queues.get(x.it).shift();
+    return { x, ex };
+  });
+}
+// 並べかえ（同じ漢字がとなり合わないように）
+function spread(list) {
+  let best = shuffle(list);
+  for (let t = 0; t < 30; t++) {
+    const ok = best.every((v, i) => i === 0 || v.x.it !== best[i - 1].x.it);
+    if (ok) break;
+    best = shuffle(list);
+  }
+  return best;
+}
+
+/* ---------- プリントの組み立て ---------- */
+const MM_K = 14, MM_O = 9; // 書きのマスの長さ（漢字1字・送りがな1字あたり mm）
+function renderSentence(ex, mode, hidden, learned, grade, ans) {
+  let h = '';
+  ex.forEach(p => {
+    if (p.t !== undefined) {
+      h += esc(p.t).replace(/ /g, grade <= 2 ? '<span class="sp"></span>' : '');
+    } else if (p.w !== undefined) {
+      const ks = kanjiOf(p.w);
+      const show = ks.every(c => learned(c) && !hidden.has(c));
+      h += esc(show ? p.w : p.r);
+    } else if (p.q !== undefined) {
+      if (mode === 'R') {
+        const len = Math.max([...p.q].length, [...p.r].length * 0.72 + 0.9);
+        h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len.toFixed(2)}em">${ans ? esc(p.r) : ''}</span></span>${esc(p.o)}`;
+      } else {
+        const nk = [...p.q].length, no = [...p.o].length;
+        const L = Math.max(nk * MM_K + no * MM_O, [...(p.r + p.o)].length * 4.6 + 3);
+        const kana = [...(p.r + p.o)].map(c => `<span>${esc(c)}</span>`).join('');
+        const a = ans ? `<span class="wans">${[...p.q].map(c => `<span>${esc(c)}</span>`).join('')}${[...p.o].map(c => `<span class="ok">${esc(c)}</span>`).join('')}</span>` : '';
+        h += `<span class="wq" style="inline-size:${L}mm">${a}<span class="wk">${kana}</span></span>`;
+      }
+    }
+  });
+  return h;
+}
+
+function pageHTML(set, mode, ans, meta) {
+  const qs = mode === 'R' ? set.reading : set.writing;
+  const n = mode === 'R' ? 14 : 10;
+  const cols = qs.map((q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`).join('');
+  const ttl = mode === 'R' ? '漢字の読み' : '漢字の書き';
+  const how = mode === 'R' ? '――線の漢字の読みがなを、右の□に書きましょう。' : '□に、ひらがなを漢字と送りがなで書きましょう。';
+  return `<div class="page"><div class="ph">
+      <div class="ttl">${ttl}</div>
+      <div class="rng"><span>小${meta.grade}　${esc(meta.unitLabel)} まで</span><span>パターン ${meta.pat}</span></div>
+      ${ans ? '<div class="ansmark">こたえ</div>' : `<div class="nm">名前<i></i></div><div class="sc"><i></i>／${qs.length}</div>`}
+    </div><div class="howto">${how}</div>
+    <div class="qs" style="--n:${n};--fs:${mode === 'R' ? '6.6mm' : '7mm'};--gutter:${mode === 'R' ? '11.8mm' : '6.5mm'}">${cols}</div>
+    <div class="foot">${mode === 'R' ? '1' : '2'}ページ目${ans ? '（こたえ）' : ''}</div></div>`;
+}
+
+let SETS = [], META = null;
+function make() {
+  const g = +$('gradeSel').value, ui = +$('unitSel').value, n = +$('setSel').value;
+  const u = DATA[g - 1].units[ui];
+  META = { grade: g, unitLabel: `${CIRC[ui]}「${u.title}」` };
+  SETS = [];
+  for (let i = 0; i < n; i++) SETS.push(makeSet(g, ui));
+  draw();
+  store.set('kp-sel', JSON.stringify({ g, ui, n }));
+}
+
+function draw(which) {
+  if (!SETS.length) return;
+  const pats = 'ABCDEFGHIJ';
+  const q = [], a = [];
+  SETS.forEach((s, i) => {
+    const m = { ...META, pat: pats[i] };
+    q.push([`パターン${pats[i]}・問題1（読み）`, pageHTML(s, 'R', false, m)], [`パターン${pats[i]}・問題2（書き）`, pageHTML(s, 'W', false, m)]);
+    a.push([`パターン${pats[i]}・こたえ1（読み）`, pageHTML(s, 'R', true, m)], [`パターン${pats[i]}・こたえ2（書き）`, pageHTML(s, 'W', true, m)]);
+  });
+  const list = which === 'Q' ? q : which === 'A' ? a : q.concat(a);
+  $('preview').innerHTML = list.map(([lb, h]) => `<div class="pagelabel">${lb}</div><div class="pagewrap">${h}</div>`).join('');
+  fitZoom();
+}
+
+function fitZoom() {
+  const mm = 96 / 25.4;
+  const w = Math.min(window.innerWidth - 24, 1120);
+  const z = Math.min(1, w / (297 * mm));
+  document.documentElement.style.setProperty('--z', z.toFixed(4));
+}
+window.addEventListener('resize', fitZoom);
+
+function doPrint(which) {
+  if (!SETS.length) make();
+  draw(which);
+  setTimeout(() => { window.print(); }, 150);
+}
+window.addEventListener('afterprint', () => draw());
+
+/* ---------- データを見る ---------- */
+function renderData() {
+  let h = '<p style="color:var(--sub);font-size:13px">プリントに出る漢字・読み・例文の一覧です。下線が出題する語です。まだ習っていない漢字は、プリントではひらがなで出ます。</p>';
+  DATA.forEach(g => {
+    h += `<h2>小学${g.grade}年</h2>`;
+    g.units.forEach((u, ui) => {
+      h += `<div class="dunit"><h3>${CIRC[ui]} ${esc(u.title)} <small>（教科書 ${esc(u.pages)}）</small></h3>`;
+      if (!u.items.length) h += '<div style="color:var(--sub);font-size:13px">新しい漢字・読みかえはありません</div>';
+      u.items.forEach(it => {
+        const tag = it.type === 'K' ? '' : `<span class="tag ${it.type}">${it.type === 'Y' ? '読みかえ' : '特別な読み'}</span>`;
+        const exs = it.ex.map(ex => '<li>' + ex.map(p => p.t !== undefined ? esc(p.t) : p.w !== undefined ? `<ruby>${esc(p.w)}<rt>${esc(p.r)}</rt></ruby>` : `<u><ruby>${esc(p.q)}<rt>${esc(p.r)}</rt></ruby></u>${esc(p.o)}`).join('') + '</li>').join('');
+        h += `<div class="ditem"><div class="k">${esc(it.type === 'K' ? it.word : '')}${it.type !== 'K' ? '' : `<small>${esc(it.yomi)}</small>`}</div><div>${tag}${it.type !== 'K' ? `<b style="font-family:var(--kyokasho);font-size:17px">${esc(it.word)}</b>（${esc(it.yomi)}）` : ''}<ul>${exs}</ul></div></div>`;
+      });
+      h += '</div>';
+    });
+  });
+  $('dataview').innerHTML = h;
+}
+function tab(data) {
+  $('tabPrint').setAttribute('aria-pressed', !data); $('tabData').setAttribute('aria-pressed', data);
+  $('preview').hidden = data; $('dataview').hidden = !data;
+  if (data && !$('dataview').innerHTML) renderData();
+}
+
+/* ---------- はじめに ---------- */
+$('gradeSel').addEventListener('change', () => { fillUnits(); showInfo(); });
+$('unitSel').addEventListener('change', showInfo);
+$('makeBtn').addEventListener('click', () => { tab(false); make(); });
+$('printQ').addEventListener('click', () => { tab(false); doPrint('Q'); });
+$('printA').addEventListener('click', () => { tab(false); doPrint('A'); });
+$('printAll').addEventListener('click', () => { tab(false); doPrint(); });
+$('tabPrint').addEventListener('click', () => tab(false));
+$('tabData').addEventListener('click', () => tab(true));
+(function init() {
+  let s = null; try { s = JSON.parse(store.get('kp-sel')); } catch (e) {}
+  if (s && s.g) $('gradeSel').value = s.g;
+  fillUnits();
+  if (s && s.ui !== undefined && s.ui < $('unitSel').options.length) $('unitSel').value = s.ui;
+  if (s && s.n) $('setSel').value = s.n;
+  showInfo(); fitZoom();
+})();
+</script>
+</body>
+</html>
