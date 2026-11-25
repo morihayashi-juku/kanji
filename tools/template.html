@@ -40,35 +40,40 @@ button:active{transform:translateY(1px)}
 
 /* ===== プレビュー ===== */
 #preview{padding:18px 0 60px}
-.pagewrap{margin:0 auto 18px;width:calc(297mm * var(--z));height:calc(210mm * var(--z));}
+.pagewrap{margin:0 auto 18px;width:calc(210mm * var(--z));height:calc(297mm * var(--z));}
 .pagewrap .page{zoom:var(--z);box-shadow:0 4px 18px rgba(0,0,0,.12)}
-.pagelabel{max-width:calc(297mm * var(--z));margin:0 auto 6px;font-size:12px;color:var(--sub)}
+.pagelabel{max-width:calc(210mm * var(--z));margin:0 auto 6px;font-size:12px;color:var(--sub)}
 .empty{max-width:640px;margin:40px auto;text-align:center;color:var(--sub);line-height:1.9}
 
 /* ===== プリント本体（A4横） ===== */
-.page{width:297mm;height:210mm;background:#fff;padding:9mm 11mm 9mm;display:flex;flex-direction:column;overflow:hidden;font-family:var(--kyokasho);color:#000;position:relative}
-.ph{display:flex;align-items:flex-end;gap:6mm;border-bottom:.5mm solid #000;padding-bottom:2.2mm;height:17mm;flex:none}
-.ph .ttl{font-size:7.2mm;font-weight:600;letter-spacing:.08em;white-space:nowrap}
-.ph .rng{font-size:3.6mm;line-height:1.35;flex:1;min-width:0}
-.ph .rng span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ph .nm{display:flex;align-items:flex-end;gap:2mm;font-size:4mm;white-space:nowrap}
-.ph .nm i{display:inline-block;width:46mm;border-bottom:.3mm solid #000;height:7mm}
-.ph .sc{font-size:4mm;border:.4mm solid #000;border-radius:2mm;padding:1.2mm 2.5mm;white-space:nowrap}
-.ph .sc i{display:inline-block;width:11mm}
+.page{width:210mm;height:297mm;background:#fff;padding:9mm 10mm 8mm;display:flex;flex-direction:column;overflow:hidden;font-family:var(--kyokasho);color:#000;position:relative}
+.ph{display:flex;align-items:flex-end;gap:4mm;border-bottom:.5mm solid #000;padding-bottom:2mm;height:17mm;flex:none}
+.ph .ttl{font-size:6.6mm;font-weight:600;letter-spacing:.06em;white-space:nowrap}
+.ph .rng{font-size:3mm;line-height:1.3;flex:1;min-width:0}
+.ph .rng span{display:block;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.ph .nm{display:flex;align-items:flex-end;gap:2mm;font-size:3.8mm;white-space:nowrap}
+.ph .nm i{display:inline-block;width:34mm;border-bottom:.3mm solid #000;height:7mm}
+.ph .sc{font-size:3.8mm;border:.4mm solid #000;border-radius:2mm;padding:1.2mm 2.2mm;white-space:nowrap}
+.ph .sc i{display:inline-block;width:9mm}
 .ph .ansmark{color:var(--red);border:.5mm solid var(--red);border-radius:2mm;padding:.5mm 2mm;font-size:4.4mm;font-weight:600}
-.howto{font-size:4.2mm;margin:2.4mm 0 0;flex:none}
-.qs{flex:1;writing-mode:vertical-rl;margin-top:3mm;font-size:var(--fs);line-height:1;overflow:hidden}
-.q{block-size:calc(275mm / var(--n));inline-size:100%;padding-block-start:var(--gutter);padding-inline-start:1mm;border-left:.25mm dashed #b9b9b9;white-space:nowrap;line-height:1.25}
+.howto{font-size:3.8mm;margin:2.2mm 0 0;flex:none;line-height:1.5}
+.howto b{display:inline-block;width:3.4mm;height:3.4mm;border:.9mm solid #000;vertical-align:-.3mm;margin:0 .6mm}
+.tier{flex:1;min-height:0;display:flex;margin-top:3mm}
+.tier+.tier{border-top:.35mm solid #000;padding-top:3mm}
+.qs{flex:1;writing-mode:vertical-rl;font-size:var(--fs);line-height:1;overflow:hidden}
+.q{block-size:calc(190mm / var(--n));inline-size:100%;padding-block-start:var(--gutter);padding-inline-start:1mm;border-left:.25mm dashed #b9b9b9;white-space:nowrap;line-height:1.25;overflow:hidden}
 .q:last-child{border-left:none}
-.num{font-size:4.6mm;margin-inline-end:2mm;font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
+.num{font-size:4.4mm;margin-inline-end:.35em;font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
 .sp{display:inline-block;inline-size:.45em}
 .yq{display:inline-block;position:relative;border-right:.45mm solid #000;line-height:1.15;padding-block:0 .3mm}
-.ybox{position:absolute;left:100%;top:0;margin-left:2.4mm;width:9mm;border:.35mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:4.4mm;line-height:1;padding-top:1mm;color:var(--red);text-align:start;display:flex;justify-content:center}
-.wq{display:inline-block;position:relative;block-size:13.5mm;border:.45mm solid #000;vertical-align:middle;margin-block:0 0;margin-inline:.6mm;line-height:1}
-.wk{position:absolute;left:100%;top:0;height:100%;margin-left:.8mm;font-size:3.7mm;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
-.wans{position:absolute;inset:0;display:flex;justify-content:space-evenly;align-items:center;color:var(--red);font-size:9mm;line-height:1}
-.wans .ok{font-size:6.6mm}
-.foot{position:absolute;right:11mm;bottom:3.5mm;font-size:2.8mm;color:#888;font-family:sans-serif}
+.ybox{position:absolute;left:100%;top:0;margin-left:.36em;width:1.45em;border:.35mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:1em;line-height:1;padding-top:.15em;color:var(--red);text-align:start;display:flex;justify-content:center}
+.ybox span{font-size:.68em}
+.wq{display:inline-block;position:relative;block-size:2em;border:.4mm solid #000;vertical-align:middle;margin-inline:.1em;line-height:1}
+.wq.okuri{border-width:1.1mm}
+.wk{position:absolute;left:100%;top:0;height:100%;margin-left:.12em;font-size:.52em;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
+.wans{position:absolute;inset:0;display:flex;justify-content:space-evenly;align-items:center;color:var(--red);font-size:1.3em;line-height:1}
+.wans .ok{font-size:.75em}
+.foot{position:absolute;right:10mm;bottom:3mm;font-size:2.8mm;color:#888;font-family:sans-serif}
 
 /* ===== データを見る ===== */
 #dataview{max-width:1100px;margin:0 auto;padding:18px}
@@ -89,7 +94,7 @@ button:active{transform:translateY(1px)}
 @media screen and (max-width:700px){ .tabs{margin-left:0} }
 
 /* ===== 印刷 ===== */
-@page{size:A4 landscape;margin:0}
+@page{size:A4 portrait;margin:0}
 @media print{
   body{background:#fff}
   .panel,.pagelabel,#dataview,.empty{display:none!important}
@@ -105,7 +110,7 @@ button:active{transform:translateY(1px)}
 <body>
 <div class="panel">
   <div class="panel-inner">
-    <div class="brand"><h1>漢字プリントメーカー</h1><small>東京書籍「新しい国語」小1〜小3｜A4横・縦書き</small>
+    <div class="brand"><h1>漢字プリントメーカー</h1><small>東京書籍「新しい国語」小1〜小3｜A4たて・2段・縦書き</small>
       <div class="tabs"><button id="tabPrint" aria-pressed="true">プリント</button><button id="tabData" aria-pressed="false">漢字データを見る</button></div>
     </div>
     <div class="field"><label for="gradeSel">学年</label>
@@ -270,7 +275,7 @@ function spread(list) {
 }
 
 /* ---------- プリントの組み立て ---------- */
-const MM_K = 14, MM_O = 9; // 書きのマスの長さ（漢字1字・送りがな1字あたり mm）
+const EM_K = 2, EM_O = 1.3; // 書きのマスの長さ（漢字1字・送りがな1字あたり、文字の大きさの何倍か）
 function renderSentence(ex, mode, hidden, learned, grade, ans) {
   let h = '';
   ex.forEach(p => {
@@ -283,13 +288,13 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
     } else if (p.q !== undefined) {
       if (mode === 'R') {
         const len = Math.max([...p.q].length, [...p.r].length * 0.72 + 0.9);
-        h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len.toFixed(2)}em">${ans ? esc(p.r) : ''}</span></span>${esc(p.o)}`;
+        h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len.toFixed(2)}em">${ans ? '<span>' + esc(p.r) + '</span>' : ''}</span></span>${esc(p.o)}`;
       } else {
         const nk = [...p.q].length, no = [...p.o].length;
-        const L = Math.max(nk * MM_K + no * MM_O, [...(p.r + p.o)].length * 4.6 + 3);
+        const L = Math.max(nk * EM_K + no * EM_O, [...(p.r + p.o)].length * 0.66 + 0.4);
         const kana = [...(p.r + p.o)].map(c => `<span>${esc(c)}</span>`).join('');
         const a = ans ? `<span class="wans">${[...p.q].map(c => `<span>${esc(c)}</span>`).join('')}${[...p.o].map(c => `<span class="ok">${esc(c)}</span>`).join('')}</span>` : '';
-        h += `<span class="wq" style="inline-size:${L}mm">${a}<span class="wk">${kana}</span></span>`;
+        h += `<span class="wq${no ? ' okuri' : ''}" style="inline-size:${L.toFixed(2)}em">${a}<span class="wk">${kana}</span></span>`;
       }
     }
   });
@@ -298,17 +303,30 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
 
 function pageHTML(set, mode, ans, meta) {
   const qs = mode === 'R' ? set.reading : set.writing;
-  const n = mode === 'R' ? 14 : 10;
-  const cols = qs.map((q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`).join('');
+  const per = mode === 'R' ? 7 : 5;                 // 1段の問題数
+  const style = `--n:${per};--fs:${mode === 'R' ? '7mm' : '7.4mm'};--gutter:${mode === 'R' ? '2.35em' : '.9em'}`;
+  const col = (q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`;
+  const tiers = [qs.slice(0, per), qs.slice(per)].map((part, t) =>
+    `<div class="tier"><div class="qs" style="${style}">${part.map((q, i) => col(q, t * per + i)).join('')}</div></div>`).join('');
   const ttl = mode === 'R' ? '漢字の読み' : '漢字の書き';
-  const how = mode === 'R' ? '――線の漢字の読みがなを、右の□に書きましょう。' : '□に、ひらがなを漢字と送りがなで書きましょう。';
+  const how = mode === 'R' ? '――線の漢字の読みがなを、右の□に書きましょう。'
+    : '□に、ひらがなを漢字と送りがなで書きましょう。<br>わくが<b></b>太いところは、送りがなもいっしょに書きます。';
   return `<div class="page"><div class="ph">
       <div class="ttl">${ttl}</div>
       <div class="rng"><span>小${meta.grade}　${esc(meta.unitLabel)} まで</span><span>パターン ${meta.pat}</span></div>
       ${ans ? '<div class="ansmark">こたえ</div>' : `<div class="nm">名前<i></i></div><div class="sc"><i></i>／${qs.length}</div>`}
     </div><div class="howto">${how}</div>
-    <div class="qs" style="--n:${n};--fs:${mode === 'R' ? '6.6mm' : '7mm'};--gutter:${mode === 'R' ? '11.8mm' : '6.5mm'}">${cols}</div>
+    ${tiers}
     <div class="foot">${mode === 'R' ? '1' : '2'}ページ目${ans ? '（こたえ）' : ''}</div></div>`;
+}
+
+// 1列に入りきらないときは、その列だけ文字を小さくする
+function fitColumns() {
+  document.querySelectorAll('#preview .q').forEach(q => {
+    q.style.fontSize = '';
+    let k = 1, n = 0;
+    while (q.scrollHeight > q.clientHeight + 1 && n < 14) { k *= 0.94; q.style.fontSize = `calc(var(--fs) * ${k.toFixed(3)})`; n++; }
+  });
 }
 
 let SETS = [], META = null;
@@ -334,12 +352,14 @@ function draw(which) {
   const list = which === 'Q' ? q : which === 'A' ? a : q.concat(a);
   $('preview').innerHTML = list.map(([lb, h]) => `<div class="pagelabel">${lb}</div><div class="pagewrap">${h}</div>`).join('');
   fitZoom();
+  fitColumns();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitColumns);
 }
 
 function fitZoom() {
   const mm = 96 / 25.4;
-  const w = Math.min(window.innerWidth - 24, 1120);
-  const z = Math.min(1, w / (297 * mm));
+  const w = Math.min(window.innerWidth - 24, 900);
+  const z = Math.min(1, w / (210 * mm));
   document.documentElement.style.setProperty('--z', z.toFixed(4));
 }
 window.addEventListener('resize', fitZoom);
