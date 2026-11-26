@@ -66,9 +66,9 @@ button:active{transform:translateY(1px)}
 .num{font-size:4.4mm;margin-inline-end:.35em;font-family:"Hiragino Sans","Noto Sans JP",sans-serif}
 .sp{display:inline-block;inline-size:.45em}
 .yq{display:inline-block;position:relative;border-right:.45mm solid #000;line-height:1.15;padding-block:0 .3mm}
-.ybox{position:absolute;left:100%;top:0;margin-left:1.8mm;width:12.5mm;border:.4mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:6.6mm;line-height:1;padding-top:1.6mm;color:var(--red);text-align:start;display:flex;justify-content:center}
+.ybox{position:absolute;left:100%;top:0;margin-left:1.8mm;width:15.5mm;border:.4mm solid #000;background:#fff;writing-mode:vertical-rl;font-size:7.2mm;line-height:1;padding-top:1.6mm;color:var(--red);text-align:start;display:flex;justify-content:center}
 .ybox span{font-size:1em}
-.wq{display:inline-block;position:relative;block-size:2.2em;border:.4mm solid #000;vertical-align:middle;margin-inline:.1em;line-height:1}
+.wq{display:inline-block;position:relative;block-size:2.55em;border:.4mm solid #000;vertical-align:middle;margin-inline:.1em;line-height:1}
 .wq.okuri{border-width:1.1mm}
 .wq.okuri .wk{margin-left:2.2mm}
 .wk{position:absolute;left:100%;top:0;height:100%;margin-left:2mm;font-size:.52em;line-height:1;display:flex;justify-content:space-around;writing-mode:vertical-rl;letter-spacing:0}
@@ -297,7 +297,7 @@ function spread(list) {
 }
 
 /* ---------- プリントの組み立て ---------- */
-const EM_K = 2.5, EM_O = 1.6; // 書きのマスの長さ（漢字1字・送りがな1字あたり、文字の大きさの何倍か）
+const EM_K = 3.1, EM_O = 1.9; // 書きのマスの長さ（漢字1字・送りがな1字あたり、文字の大きさの何倍か）
 function renderSentence(ex, mode, hidden, learned, grade, ans) {
   let h = '';
   ex.forEach(p => {
@@ -309,8 +309,8 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
       h += esc(show ? p.w : p.r);
     } else if (p.q !== undefined) {
       if (mode === 'R') {
-        // 読みがなのらん：ひらがな1字につき9mm＋よゆう。漢字の長さより短くはしない
-        const len = Math.max([...p.q].length * 8, [...p.r].length * 9 + 6);
+        // 読みがなのらん：ひらがな1字につき11mm＋よゆう。漢字の長さより短くはしない
+        const len = Math.max([...p.q].length * 10, [...p.r].length * 11 + 8);
         h += `<span class="yq">${esc(p.q)}<span class="ybox" style="height:${len}mm">${ans ? '<span>' + esc(p.r) + '</span>' : ''}</span></span>${esc(p.o)}`;
       } else {
         const nk = [...p.q].length, no = [...p.o].length;
@@ -329,7 +329,7 @@ function renderSentence(ex, mode, hidden, learned, grade, ans) {
 function pageHTML(set, mode, ans, meta) {
   const qs = mode === 'R' ? set.reading : set.writing;
   const per = 7;                                    // 1段の問題数（読み・書きとも）
-  const style = `--n:${per};--fs:${mode === 'R' ? '5.6mm' : '7mm'};--gutter:${mode === 'R' ? '15mm' : '1.15em'}`;
+  const style = `--n:${per};--fs:${mode === 'R' ? '5.6mm' : '7mm'};--gutter:${mode === 'R' ? '18.5mm' : '1.05em'}`;
   const col = (q, i) => `<div class="q"><span class="num">${CIRC[i]}</span>${renderSentence(q.ex, mode, set.hidden, set.learned, meta.grade, ans)}</div>`;
   const tiers = [qs.slice(0, per), qs.slice(per)].map((part, t) =>
     `<div class="tier"><div class="qs" style="${style}">${part.map((q, i) => col(q, t * per + i)).join('')}</div></div>`).join('');
