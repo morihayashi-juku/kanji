@@ -94,11 +94,18 @@ button:active{transform:translateY(1px)}
 
 @media screen and (max-width:700px){ .tabs{margin-left:0} }
 
+/* ===== PDF ===== */
+#pdfStage{position:fixed;left:-30000px;top:0;pointer-events:none}
+#pdfDlg{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:20px}
+#pdfDlg[hidden]{display:none}
+#pdfDlg .dlg{background:#fff;border-radius:14px;padding:20px 22px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+#pdfDlg p{margin:0 0 14px;line-height:1.7;font-size:15px}
+
 /* ===== 印刷 ===== */
 @page{size:A4 portrait;margin:0}
 @media print{
   body{background:#fff}
-  .panel,.pagelabel,#dataview,.empty{display:none!important}
+  .panel,.pagelabel,#dataview,.empty,#pdfDlg,#pdfStage{display:none!important}
   #preview{padding:0}
   .pagewrap{width:auto;height:auto;margin:0}
   .pagewrap .page{zoom:1;box-shadow:none}
@@ -124,12 +131,18 @@ button:active{transform:translateY(1px)}
       <button id="printQ">問題を印刷</button>
       <button id="printA">答えを印刷</button>
       <button id="printAll">ぜんぶ印刷</button>
+      <button id="pdfBtn">PDFにする</button>
     </div>
     <div class="unitinfo" id="unitInfo"></div>
   </div>
 </div>
 <main id="preview"><div class="empty">学年と「ここまで習った」単元を選んで、<br>「プリントを作る」をおしてください。<br>おすたびに、ちがう問題のプリントができます。</div></main>
 <section id="dataview" hidden></section>
+<div id="pdfStage" aria-hidden="true"></div>
+<div id="pdfDlg" hidden><div class="dlg">
+  <p id="pdfMsg"></p>
+  <div class="btns"><button class="primary" id="pdfShare" hidden>印刷・保存</button><button id="pdfOpen" hidden>PDFを開く</button><button id="pdfClose">閉じる</button></div>
+</div></div>
 
 <script>
 const DATA = __DATA__;
@@ -333,8 +346,8 @@ function pageHTML(set, mode, ans, meta) {
 }
 
 // 1列に入りきらないときは、その列だけ文字を小さくする
-function fitColumns() {
-  document.querySelectorAll('#preview .q').forEach(q => {
+function fitColumns(root) {
+  (root || $('preview')).querySelectorAll('.q').forEach(q => {
     q.style.fontSize = '';
     let k = 1, n = 0;
     while (q.scrollHeight > q.clientHeight + 1 && n < 14) { k *= 0.94; q.style.fontSize = `calc(var(--fs) * ${k.toFixed(3)})`; n++; }
@@ -352,8 +365,7 @@ function make() {
   store.set('kp-sel', JSON.stringify({ g, ui, n }));
 }
 
-function draw(which) {
-  if (!SETS.length) return;
+function pagesList(which) {
   const pats = 'ABCDEFGHIJ';
   const q = [], a = [];
   SETS.forEach((s, i) => {
@@ -361,11 +373,14 @@ function draw(which) {
     q.push([`パターン${pats[i]}・問題1（読み）`, pageHTML(s, 'R', false, m)], [`パターン${pats[i]}・問題2（書き）`, pageHTML(s, 'W', false, m)]);
     a.push([`パターン${pats[i]}・こたえ1（読み）`, pageHTML(s, 'R', true, m)], [`パターン${pats[i]}・こたえ2（書き）`, pageHTML(s, 'W', true, m)]);
   });
-  const list = which === 'Q' ? q : which === 'A' ? a : q.concat(a);
-  $('preview').innerHTML = list.map(([lb, h]) => `<div class="pagelabel">${lb}</div><div class="pagewrap">${h}</div>`).join('');
+  return which === 'Q' ? q : which === 'A' ? a : q.concat(a);
+}
+function draw(which) {
+  if (!SETS.length) return;
+  $('preview').innerHTML = pagesList(which).map(([lb, h]) => `<div class="pagelabel">${lb}</div><div class="pagewrap">${h}</div>`).join('');
   fitZoom();
   fitColumns();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitColumns);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitColumns());
 }
 
 function fitZoom() {
@@ -376,10 +391,165 @@ function fitZoom() {
 }
 window.addEventListener('resize', fitZoom);
 
+// ホーム画面に追加した「アプリ」では window.print() が使えないので、PDFを作って共有シートから印刷する
+const STANDALONE = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 function doPrint(which) {
   if (!SETS.length) make();
+  if (STANDALONE) { makePDF(which); return; }
   draw(which);
   setTimeout(() => { window.print(); }, 150);
+}
+
+/* ---------- PDFづくり（ページの見た目をそのまま画像にして、A4のPDFにする） ---------- */
+const PDF_SCALE = 2.2; // 1 CSS px あたりの画素数（約210dpi）
+const ROT = new Set([...'ー―‐－〜～…‥—']);
+const SMALL = new Set([...'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ']);
+const PUNCT = new Set([...'。、，．']);
+
+async function pageToJPEG(html) {
+  const stage = $('pdfStage');
+  stage.innerHTML = html;
+  const page = stage.firstElementChild;
+  page.getBoundingClientRect();                       // 文字のフォントを読みこませる
+  if (document.fonts && document.fonts.ready) await document.fonts.ready;
+  fitColumns(stage);
+  const pr = page.getBoundingClientRect();
+  const W = Math.round(pr.width * PDF_SCALE), H = Math.round(pr.height * PDF_SCALE);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.scale(PDF_SCALE, PDF_SCALE); ctx.translate(-pr.left, -pr.top);
+
+  // はみ出しをかくす要素（overflow）の範囲
+  const clipOf = el => {
+    let r = { l: -1e9, t: -1e9, r: 1e9, b: 1e9 };
+    for (let e = el; e && e !== stage; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.overflow !== 'visible' || cs.webkitLineClamp && cs.webkitLineClamp !== 'none') {
+        const b = e.getBoundingClientRect();
+        r = { l: Math.max(r.l, b.left - 1), t: Math.max(r.t, b.top - 1), r: Math.min(r.r, b.right + 1), b: Math.min(r.b, b.bottom + 1) };
+      }
+    }
+    return r;
+  };
+
+  // 1) わく線
+  page.querySelectorAll('*').forEach(el => {
+    const cs = getComputedStyle(el);
+    const b = el.getBoundingClientRect();
+    if (!b.width && !b.height) return;
+    const side = (w, st, col, x1, y1, x2, y2) => {
+      w = parseFloat(w); if (!w || st === 'none' || st === 'hidden') return;
+      ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = w;
+      if (st === 'dashed') ctx.setLineDash([w * 4, w * 3]); else if (st === 'dotted') ctx.setLineDash([w, w * 1.5]);
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); ctx.restore();
+    };
+    const h = w => parseFloat(w) / 2;
+    side(cs.borderTopWidth, cs.borderTopStyle, cs.borderTopColor, b.left, b.top + h(cs.borderTopWidth), b.right, b.top + h(cs.borderTopWidth));
+    side(cs.borderBottomWidth, cs.borderBottomStyle, cs.borderBottomColor, b.left, b.bottom - h(cs.borderBottomWidth), b.right, b.bottom - h(cs.borderBottomWidth));
+    side(cs.borderLeftWidth, cs.borderLeftStyle, cs.borderLeftColor, b.left + h(cs.borderLeftWidth), b.top, b.left + h(cs.borderLeftWidth), b.bottom);
+    side(cs.borderRightWidth, cs.borderRightStyle, cs.borderRightColor, b.right - h(cs.borderRightWidth), b.top, b.right - h(cs.borderRightWidth), b.bottom);
+  });
+
+  // 2) 文字（1字ずつ、ページ上の位置に描く）
+  const walker = document.createTreeWalker(page, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  let node;
+  while ((node = walker.nextNode())) {
+    const el = node.parentElement, cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    const vertical = cs.writingMode.startsWith('vertical') || cs.writingMode.startsWith('tb');
+    const fs = parseFloat(cs.fontSize);
+    ctx.font = `${cs.fontWeight} ${fs}px ${cs.fontFamily}`;
+    ctx.fillStyle = cs.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const clip = clipOf(el);
+    const text = node.data;
+    let i = 0;
+    for (const ch of text) {
+      const len = ch.length;
+      if (!/\s/.test(ch)) {
+        range.setStart(node, i); range.setEnd(node, i + len);
+        const r = range.getClientRects()[0];
+        if (r && r.width) {
+          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          if (cx >= clip.l && cx <= clip.r && cy >= clip.t && cy <= clip.b) {
+            ctx.save(); ctx.translate(cx, cy);
+            if (vertical && ROT.has(ch)) ctx.rotate(Math.PI / 2);
+            else if (vertical && PUNCT.has(ch)) ctx.translate(fs * 0.58, -fs * 0.58);
+            else if (vertical && SMALL.has(ch)) ctx.translate(fs * 0.1, -fs * 0.12);
+            ctx.fillText(ch, 0, 0); ctx.restore();
+          }
+        }
+      }
+      i += len;
+    }
+  }
+  const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.9));
+  return { bytes: new Uint8Array(await blob.arrayBuffer()), w: W, h: H };
+}
+
+function buildPDF(images) {
+  // 画像を1ページに1枚ずつ入れたA4たてのPDF
+  const enc = new TextEncoder(), chunks = [], offs = [];
+  let pos = 0;
+  const put = d => { const b = typeof d === 'string' ? enc.encode(d) : d; chunks.push(b); pos += b.length; };
+  const obj = (n, body) => { offs[n] = pos; put(`${n} 0 obj\n`); body(); put('\nendobj\n'); };
+  const PW = 595.28, PH = 841.89, n = images.length;
+  put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const pageIds = images.map((_, i) => 3 + i * 3);
+  obj(1, () => put('<< /Type /Catalog /Pages 2 0 R >>'));
+  obj(2, () => put(`<< /Type /Pages /Count ${n} /Kids [${pageIds.map(id => id + ' 0 R').join(' ')}] >>`));
+  images.forEach((im, i) => {
+    const p = 3 + i * 3, c = p + 1, x = p + 2;
+    const content = `q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`;
+    obj(p, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${x} 0 R >> >> /Contents ${c} 0 R >>`));
+    obj(c, () => put(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`));
+    obj(x, () => { put(`<< /Type /XObject /Subtype /Image /Width ${im.w} /Height ${im.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${im.bytes.length} >>\nstream\n`); put(im.bytes); put('\nendstream'); });
+  });
+  const total = 3 + n * 3, xref = pos;
+  let x = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for (let k = 1; k < total; k++) x += String(offs[k]).padStart(10, '0') + ' 00000 n \n';
+  put(x + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+
+let PDF_FILE = null;
+async function makePDF(which) {
+  if (!SETS.length) make();
+  const list = pagesList(which);
+  const dlg = $('pdfDlg');
+  dlg.hidden = false;
+  $('pdfMsg').textContent = 'PDFを作っています…';
+  $('pdfShare').hidden = true; $('pdfOpen').hidden = true;
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const imgs = [];
+    for (let i = 0; i < list.length; i++) {
+      $('pdfMsg').textContent = `PDFを作っています… ${i + 1} / ${list.length} ページ`;
+      imgs.push(await pageToJPEG(list[i][1]));
+      await new Promise(r => setTimeout(r, 0));
+    }
+    $('pdfStage').innerHTML = '';
+    const kind = which === 'Q' ? '問題' : which === 'A' ? 'こたえ' : '問題とこたえ';
+    const name = `漢字プリント_小${META.grade}_${kind}.pdf`;
+    const blob = buildPDF(imgs);
+    PDF_FILE = new File([blob], name, { type: 'application/pdf' });
+    const canShare = navigator.canShare && navigator.canShare({ files: [PDF_FILE] });
+    $('pdfMsg').innerHTML = `PDFができました（${list.length}ページ）。<br>${canShare ? '「印刷・保存」をおして、出てきたメニューの「プリント」から印刷できます。' : '「PDFを開く」から印刷・保存できます。'}`;
+    $('pdfShare').hidden = !canShare; $('pdfOpen').hidden = false;
+  } catch (e) {
+    $('pdfMsg').textContent = 'PDFを作れませんでした：' + e.message;
+  }
+}
+async function sharePDF() {
+  try { await navigator.share({ files: [PDF_FILE], title: PDF_FILE.name }); }
+  catch (e) { if (e.name !== 'AbortError') openPDF(); }
+}
+function openPDF() {
+  const url = URL.createObjectURL(PDF_FILE);
+  const a = document.createElement('a'); a.href = url; a.download = PDF_FILE.name; a.target = '_blank';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 window.addEventListener('afterprint', () => draw());
 
@@ -414,6 +584,10 @@ $('makeBtn').addEventListener('click', () => { tab(false); make(); });
 $('printQ').addEventListener('click', () => { tab(false); doPrint('Q'); });
 $('printA').addEventListener('click', () => { tab(false); doPrint('A'); });
 $('printAll').addEventListener('click', () => { tab(false); doPrint(); });
+$('pdfBtn').addEventListener('click', () => { tab(false); makePDF(); });
+$('pdfShare').addEventListener('click', sharePDF);
+$('pdfOpen').addEventListener('click', openPDF);
+$('pdfClose').addEventListener('click', () => { $('pdfDlg').hidden = true; });
 $('tabPrint').addEventListener('click', () => tab(false));
 $('tabData').addEventListener('click', () => tab(true));
 (function init() {
